@@ -57,3 +57,48 @@ export async function getProducts(first: number): Promise<ProductListItem[]> {
 
   return data.products.nodes;
 }
+
+/** Response shape of PRODUCT_BY_HANDLE_QUERY. */
+export interface ProductByHandleQueryData {
+  product: ProductListItem | null;
+}
+
+/**
+ * Minimal single-product query. Selects the same fields as
+ * PRODUCTS_QUERY so both helpers share the ProductListItem type.
+ */
+export const PRODUCT_BY_HANDLE_QUERY = `#graphql
+  query ProductByHandle($handle: String!) {
+    product(handle: $handle) {
+      id
+      title
+      handle
+    }
+  }
+`;
+
+/**
+ * Fetches a single product by its handle.
+ * Returns null when no product exists for the handle.
+ * Throws if the Storefront API responds with errors or without data.
+ * Server-side only, like getProducts().
+ */
+export async function getProductByHandle(
+  handle: string
+): Promise<ProductListItem | null> {
+  const { data, errors } = await shopify.request<ProductByHandleQueryData>(
+    PRODUCT_BY_HANDLE_QUERY,
+    { variables: { handle } }
+  );
+
+  if (errors) {
+    console.error(errors);
+    throw new Error("Unable to load Shopify product");
+  }
+
+  if (!data) {
+    throw new Error("Unable to load Shopify product");
+  }
+
+  return data.product;
+}
